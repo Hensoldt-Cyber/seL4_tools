@@ -283,7 +283,9 @@ if(NOT ${ElfloaderHashInstructions} STREQUAL "hash_none")
 endif()
 
 # Construct the ELF loader's payload.
-MakeCPIO(archive.o "${cpio_files}" CPIO_SYMBOL _archive_start)
+set(archive_o "cpio/archive.o")
+
+MakeCPIO(${archive_o} "${cpio_files}" CPIO_SYMBOL _archive_start)
 
 set(PLATFORM_HEADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen_headers")
 set(PLATFORM_INFO_H "${PLATFORM_HEADER_DIR}/platform_info.h")
@@ -315,7 +317,6 @@ else()
     set(PLATFORM_SIFT "${CMAKE_TOOL_HELPERS_DIR}/platform_sift.py")
     set(ELF_SIFT "${CMAKE_TOOL_HELPERS_DIR}/elf_sift.py")
     set(SHOEHORN "${CMAKE_TOOL_HELPERS_DIR}/shoehorn.py")
-    set(ARCHIVE_O "${CMAKE_CURRENT_BINARY_DIR}/archive.o")
     add_custom_command(
         OUTPUT "${IMAGE_START_ADDR_H}" "${PLATFORM_INFO_H}"
         COMMAND
@@ -330,13 +331,13 @@ else()
             # The `shoehorn` tool computes a reasonable image start address. It calls
             # `elf_sift` to obtain details about where the extracted payloads will be
             # and how big they are.
-            "${PYTHON3}" "${SHOEHORN}" "${platform_yaml}" "${ARCHIVE_O}" > "${IMAGE_START_ADDR_H}"
+            "${PYTHON3}" "${SHOEHORN}" "${platform_yaml}" "${archive_o}" > "${IMAGE_START_ADDR_H}"
         VERBATIM
         DEPENDS
             # First command's dependencies
             "${platform_yaml}" "${PLATFORM_SIFT}"
             # Second command's dependencies
-            "${ARCHIVE_O}"
+            "${archive_o}"
             "${platform_yaml}"
             "${ELF_SIFT}"
             "${SHOEHORN}"
@@ -397,7 +398,7 @@ if(ElfloaderPrecompile)
     # the build tools required to build the rest of the elfloader.
     add_library(elfloader OBJECT EXCLUDE_FROM_ALL ${files})
 else()
-    add_executable(elfloader EXCLUDE_FROM_ALL ${files} archive.o)
+    add_executable(elfloader EXCLUDE_FROM_ALL ${files} ${archive_o})
 endif()
 
 if(ElfloaderImageEFI)
